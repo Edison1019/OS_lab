@@ -122,26 +122,26 @@ int fork_cmd_node(struct cmd *cmd)
 	int pipe_fd[2];
 	int in = STDIN_FILENO;
 	int out = STDOUT_FILENO;
-	struct cmd_node *temp = cmd->head;
-	while(temp != NULL)
+	struct cmd_node *current = cmd->head;
+	while(current != NULL)
 	{
 		if (pipe(pipe_fd) == -1)
 		{
 			perror("pipe");
 			exit(EXIT_FAILURE);
 		}
-		temp->out = pipe_fd[1];
-		if(temp->next != NULL)
+		current->out = pipe_fd[1];
+		if(current->next != NULL)
 		{
-			temp->next->in = pipe_fd[0];
+			current->next->in = pipe_fd[0];
 		}
 		else
 		{
-			temp->out = STDOUT_FILENO;
+			current->out = STDOUT_FILENO;
 		}
-		spawn_proc(temp);
+		spawn_proc(current);
 		close(pipe_fd[1]);
-		temp = temp->next;
+		current = current->next;
 	}
 	return 1;
 }
@@ -160,20 +160,20 @@ void shell()
 		
 		int status = -1;
 		// only a single command
-		struct cmd_node *temp = cmd->head;
+		struct cmd_node *current = cmd->head;
 		
-		if(temp->next == NULL){
-			status = searchBuiltInCommand(temp);
+		if(current->next == NULL){
+			status = searchBuiltInCommand(current);
 			if (status != -1){
 				int in = dup(STDIN_FILENO), out = dup(STDOUT_FILENO);
 				if( in == -1 | out == -1)
 					perror("dup");
-				redirection(temp);
-				status = execBuiltInCommand(status,temp);
+				redirection(current);
+				status = execBuiltInCommand(status,current);
 
 				// recover shell stdin and stdout
-				if (temp->in_file)  dup2(in, 0);
-				if (temp->out_file){
+				if (current->in_file)  dup2(in, 0);
+				if (current->out_file){
 					dup2(out, 1);
 				}
 				close(in);
@@ -192,10 +192,10 @@ void shell()
 		// free space
 		while (cmd->head) {
 			
-			struct cmd_node *temp = cmd->head;
+			struct cmd_node *current = cmd->head;
       		cmd->head = cmd->head->next;
-			free(temp->args);
-   	    	free(temp);
+			free(current->args);
+   	    	free(current);
    		}
 		free(cmd);
 		free(buffer);
